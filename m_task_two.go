@@ -27,4 +27,3 @@ func main() {
 	go printNumber(wg)
 	wg.Wait()
 }
-
