@@ -31,30 +31,32 @@ func FetchURLs(urls []string) map[string]string {
 		wg.Add(1)
 		go func(url string) {
 			defer wg.Done()
+
+			var content string
+			defer func() {
+				mu.Lock()
+				result[url] = content
+				mu.Unlock()
+			}()
+
+
 			resp, err := http.Get(url)
 			if err != nil {
-				mu.Lock()
-				result[url] = "error"
-				mu.Unlock()
+				content = fmt.Sprintf("error: %v", err)
 				return
 			}
 			defer resp.Body.Close()
 
 			body, err := io.ReadAll(resp.Body)
 			if err != nil {
-				mu.Lock()
-				result[url] = "error"
-				mu.Unlock()
+				content = fmt.Sprintf("error reading body: %v", err)
 				return
 			}
 
-			content := string(body)
+			content = string(body)
 			if len(content) > 100 {
 				content = content[:100]
 			}
-			mu.Lock()
-			result[url] = content
-			mu.Unlock()
 		}(url)
 	}
 	wg.Wait()
